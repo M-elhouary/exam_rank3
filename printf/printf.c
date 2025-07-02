@@ -1,6 +1,6 @@
-```
 #include <unistd.h>
 #include <stdarg.h>
+#include <stddef.h>
 
 int ft_putchar(char c)
 {
@@ -9,21 +9,20 @@ int ft_putchar(char c)
 
 int ft_putnbr(int nb)
 {
-    int count;
+    int count = 0;
 
-    count = 0;
-    if(nb == -2147483648)
+    if (nb == -2147483648)
     {
         count += ft_putchar('-');
         count += ft_putchar('2');
         count += ft_putnbr(147483648);
     }
-    else if(nb < 0)
+    else if (nb < 0)
     {
         count += ft_putchar('-');
         count += ft_putnbr(-nb);
     }
-    else if(nb >= 10)
+    else if (nb >= 10)
     {
         count += ft_putnbr(nb / 10);
         count += ft_putnbr(nb % 10);
@@ -35,70 +34,57 @@ int ft_putnbr(int nb)
 
 int ft_putstr(char *s)
 {
-    int i;
+    int i = 0;
 
-    i = 0;
-    if(!s)
+    if (!s)
         return (write(1, "(null)", 6));
-    while(s[i] != '\0')
-    {
-        write(1, &s[i], 1);
-        i++;
-    }
+    while (s[i])
+        i += write(1, &s[i], 1);
     return (i);
 }
 
-int ft_hexodecimal(unsigned int n)
+int ft_puthex(unsigned int n)
 {
-    int count;
-    char s[16] = "0123456789abcdef";
+    int count = 0;
+    char *base = "0123456789abcdef";
 
-    count = 0;
-    if(n < 16)
+    if (n < 16)
+        count += ft_putchar(base[n]);
+    else
     {
-        count += ft_putchar(s[n]);
-    }
-    else 
-    {
-        count += ft_hexodecimal(n / 16);
-        count += ft_hexodecimal(n % 16);
+        count += ft_puthex(n / 16);
+        count += ft_puthex(n % 16);
     }
     return (count);
 }
 
-int ft_printf(const char *str, ... )
+int ft_printf(const char *str, ...)
 {
-    va_list list;
-    int i;
-    int count;
+    va_list args;
+    int i = 0;
+    int count = 0;
 
-    count = 0;
-    i = 0;
-    va_start(list, str);
-    while(str[i] != '\0')
+    va_start(args, str);
+    while (str[i])
     {
-        if(str[i] == '%' && str[i + 1] != '\0')
+        if (str[i] == '%' && str[i + 1])
         {
             i++;
-            if(str[i] == 'd')
-            {
-                count += ft_putnbr(va_arg(list, int));
-            }
-            else if(str[i] == 'x')
-            {
-                count += ft_hexodecimal(va_arg(list, unsigned int));
-            }
-            else if(str[i] == 's')
-            {
-                count += ft_putstr(va_arg(list, char *));
-            }
+            if (str[i] == 'd')
+                count += ft_putnbr(va_arg(args, int));
+            else if (str[i] == 'x')
+                count += ft_puthex(va_arg(args, unsigned int));
+            else if (str[i] == 's')
+                count += ft_putstr(va_arg(args, char *));
+            else if (str[i] == '%')
+                count += ft_putchar('%');
             else
-                write(1, &str[i], 1);
+                count += write(1, &str[i], 1);
         }
-        else if(str[i] != '%')
+        else
             count += write(1, &str[i], 1);
         i++;
     }
-    va_end(list);
+    va_end(args);
     return (count);
 }
