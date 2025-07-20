@@ -1,87 +1,84 @@
-#include <stdlib.h>
 #include <unistd.h>
-#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
-#ifndef BUFFER_SIZE
-#define BUFFER_SIZE 42
-#endif
+#define BUFFER_SIZE 1
 
-void	print_error(char **dest, char **str, int free1, int free2)
+int ft_strncmp(char *s1, char *s2, int len)
 {
-	if(free1 == 1)
-		free(dest);
-	if(free2 == 1)
-		free(str);
-	perror("Error: ");
-	exit(1);
-}
-
-char *ft_strjoin(char *s1, char *s2){
-	char *join = malloc(strlen(s1) + strlen(s2) + 1);
-	if (!join)
-		return (NULL);
-	char *result = join;
-	while (*s1)
-		*join++ = *s1++;
-	while (*s2)
-		*join++ = *s2++;
-	*join = '\0';
-	return (result);
-}
-
-void ft_check_replace(char **str, char *arg){
-	char	*new_str = malloc(strlen(*str) + 1);
-	size_t	len = strlen(arg);
-	if (!new_str)
+	int i = 0;
+	while (s1[i] && s2[i] && i < len)
 	{
-		free(*str);
-		perror("Error: ");
-		exit(1);
-	}
-	char *src = *str;
-	char *dst = new_str;
-	while (*src)
-	{
-		size_t i = 0;
-		while (arg[i] && src[i] == arg[i])
-			i++;
-		if (i == len)
+		if (s1[i] > s2[i])
 		{
-			for (size_t j = 0; j < len; j++)
-				*dst++ = '*';
-			src += len;
+			return (1);
+		}
+		else if (s1[i] < s2[i])
+		{
+			return (-1);
 		}
 		else
-			*dst++ = *src++;
+			i++;
 	}
-	*dst = '\0';
-	free(*str);
-	*str = new_str;
+	return (0);
+}
+char *gnl(int fd)
+{
+	static char buffer[BUFFER_SIZE];
+	static int r;
+	static int pos;
+	char *line = malloc(1000000);
+	int i = 0;
+
+	if (!line || fd < 0 || BUFFER_SIZE <= 0)
+		return NULL;
+
+	while (1)
+	{
+		if (pos >= r)
+		{
+			r = read(fd, buffer, BUFFER_SIZE);
+			pos = 0;
+			if (r <= 0)
+				break;
+		}
+		line[i++] = buffer[pos++];
+		if (line[i - 1] == '\n')
+			break;
+	}
+	line[i] = '\0';
+	if (i == 0)
+	{
+		free(line);
+		return NULL;
+	}
+	return line;
 }
 
-int main(int ac, char **av){
-	if(ac != 2 || av[1][0] == '\0')
+int main(int argc, char **argv)
+{
+	if (argc != 2 || strlen(argv[1]) == 0)
 		return 1;
-	char *str = calloc(1, 1);
-	char *dest = malloc((size_t)BUFFER_SIZE + 1);
-	if(!dest)
-		print_error(&dest, &str, 0, 0);
-	ssize_t line_b = 1;
-	while(line_b > 0){
-		line_b = read(0, dest, BUFFER_SIZE);
-		if (line_b == -1)
-			print_error(&dest, &str, 1, 1);
-		dest[line_b] = '\0';
-		char *tmp = ft_strjoin(str, dest);
-		if (!tmp)
-			print_error(&dest, &str, 1, 1);
-		free(str);
-		str = tmp;
+	char *pattern = argv[1];
+	size_t pat_len = strlen(pattern);
+	char *line;
+
+	while ((line = gnl(0)) != NULL)  // read from stdin
+	{
+		char *p = line;
+		while (*p)
+		{
+			if (ft_strncmp(p, pattern, pat_len) == 0)
+			{
+				for (size_t i = 0; i < pat_len; i++)
+					write(1, "*", 1);
+				p += pat_len;
+			}
+			else
+				write(1, p++, 1);
+		}
+		free(line);
 	}
-	free(dest);
-	ft_check_replace(&str, av[1]);
-	printf("%s", str);
-	free(str);
-	return (0);
+	return 0;
 }
